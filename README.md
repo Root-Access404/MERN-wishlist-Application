@@ -120,9 +120,3 @@ The Wishlist schema contains the following fields:
 - Add validation and better error handling on the backend
 - Add UI features (search, sort, item images)
 
----
-
-If you want, I can also:
-- Add an example `backend/.env.example` file to the repo,
-- Add a short CONTRIBUTING or DEVELOPMENT section, or
-- Commit these changes now (I already prepared this file and will add it to the repo if you confirm).
