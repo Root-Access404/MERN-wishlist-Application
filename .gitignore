@@ -5,4 +5,11 @@ dist/
 build/
 .expo/
 backend-server.log
-
+logs/
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
