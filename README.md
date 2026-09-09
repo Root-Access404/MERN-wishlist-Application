@@ -1,23 +1,26 @@
 # MERN Wishlist Application
 
-A minimal MERN (MongoDB, Express, React, Node) wishlist application that demonstrates a simple CRUD API and a React frontend using that API. This repository contains a Node/Express backend (backend folder) and a React frontend (frontend folder).
+A minimal MERN (MongoDB, Express, React, Node) wishlist application that demonstrates a simple CRUD API and a React frontend using that API. This repository contains a Node/Express backend and a React frontend designed for deployment to AWS infrastructure.
 
-##  Production-Ready Features
+## Production-Ready Features
 
-**Health Check Endpoint** - `/health` for monitoring and load balancer health checks
-**Graceful Shutdown** - Handles SIGTERM and SIGINT signals properly
-**Structured Logging** - Daily log files with timestamps and log levels
-**Environment Configuration** - Environment-based API URL switching
-**Input Validation** - Request validation middleware on all endpoints
-**Error Handling** - Global error handlers and proper error responses
-**CORS Enabled** - Cross-origin resource sharing configured
-**Request Logging** - HTTP request/response logging with duration tracking
+- **Health Check Endpoint** - `/health` for monitoring and load balancer health checks
+- **Graceful Shutdown** - Handles SIGTERM and SIGINT signals properly
+- **Structured Logging** - Daily log files with timestamps and log levels
+- **Environment Configuration** - Environment-based API URL switching for development, staging, and production
+- **Input Validation** - Request validation middleware on all API endpoints
+- **Error Handling** - Global error handlers and proper HTTP status codes
+- **CORS Enabled** - Cross-origin resource sharing configured
+- **Request Logging** - HTTP request/response logging with duration tracking
+- **No Hardcoded Secrets** - All configuration via environment variables
+- **Database Connection Management** - Proper MongoDB connection with retry logic
 
 ## Stack
 
 - **Language(s)**: JavaScript, HTML, CSS
 - **Backend**: Node.js + Express, Mongoose for MongoDB
 - **Frontend**: React (Create React App)
+- **Database**: MongoDB Atlas
 - **Notable packages**: express, mongoose, cors, dotenv (backend); react, axios (frontend)
 
 ## Features
@@ -79,17 +82,22 @@ Then edit `backend/.env` with your configuration:
 # Server Port
 PORT=5000
 
-# Node Environment
+# Node Environment (development, production)
 NODE_ENV=development
 
 # MongoDB URI - Required
-MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/<dbname>?retryWrites=true&w=majority
+# For MongoDB Atlas:
+# MONGO_URI=mongodb+srv://username:password@cluster0.mongodb.net/wishlist_db?retryWrites=true&w=majority
+# For local MongoDB:
+# MONGO_URI=mongodb://localhost:27017/wishlist_db
+MONGO_URI=
 ```
 
 **MongoDB Atlas Setup:**
 - Create a cluster at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 - Set your connection string in `MONGO_URI`
-- For production, ensure IP whitelist is configured (not 0.0.0.0/0)
+- For production, ensure IP whitelist is configured properly (restrict to your application's IP)
+- Never commit real MongoDB credentials
 
 ### Frontend
 
@@ -104,13 +112,15 @@ Edit `frontend/.env`:
 
 ```env
 # Backend API URL
+# Development: http://localhost:5000
+# Production: https://your-api-domain.com
 REACT_APP_API_URL=http://localhost:5000
 
-# Environment
+# Environment (development, production, staging)
 REACT_APP_ENV=development
 ```
 
-For production deployments, set `REACT_APP_API_URL` to your production API URL.
+**Important**: Do NOT hardcode production domain in the repository. The DevOps engineer will provide environment-specific configuration during deployment.
 
 ## How to run (development)
 
@@ -148,16 +158,16 @@ The frontend runs on `http://localhost:3000` and is configured to call the backe
 
 ### Backend
 
-1. Set environment variables:
-   ```bash
-   export NODE_ENV=production
-   export PORT=8080
-   export MONGO_URI=your_production_mongodb_uri
-   ```
-
-2. Install dependencies:
+1. Install dependencies:
    ```bash
    npm install
+   ```
+
+2. Set environment variables:
+   ```bash
+   export NODE_ENV=production
+   export PORT=5000
+   export MONGO_URI=your_production_mongodb_uri
    ```
 
 3. Start the server:
@@ -169,25 +179,52 @@ The server will:
 - Log all requests to daily log files in `logs/` directory
 - Respond to health checks at `/health`
 - Gracefully shutdown on SIGTERM/SIGINT signals
-- Handle all errors properly
+- Handle all errors properly without exposing sensitive information
 
 ### Frontend
 
-1. Build for production:
+1. Install dependencies:
    ```bash
-   npm run build
+   npm install
    ```
 
 2. Set production API URL in `.env`:
    ```env
-   REACT_APP_API_URL=https://your-api-domain.com
+   REACT_APP_API_URL=https://api.your-domain.com
    ```
 
-3. Deploy the `build/` folder to your hosting service
+3. Build for production:
+   ```bash
+   npm run build
+   ```
 
-### Docker (Optional)
+4. Deploy the `build/` folder to your static hosting service (e.g., S3 + CloudFront)
 
-You can containerize both services for easy deployment.
+## AWS Three-Tier Architecture
+
+This application is designed for deployment to the following AWS architecture:
+
+```
+Internet
+|
++--> CloudFront --> S3 --> React frontend
+|
++--> ALB --> Private EC2 instances (Port 5000) --> Node.js/Express
+                                                    |
+                                                    +--> MongoDB Atlas
+```
+
+**Backend Requirements:**
+- Runs on port 5000 (configurable via PORT environment variable)
+- Health check endpoint at `/health` responds with HTTP 200
+- Connects to MongoDB Atlas via MONGO_URI environment variable
+- Gracefully handles SIGTERM for clean shutdown during instance termination
+- All configuration externalized via environment variables
+
+**Frontend Requirements:**
+- Static build artifact deployed to S3
+- API URL configured at build time via REACT_APP_API_URL environment variable
+- Works behind CloudFront CDN
 
 ## Package scripts
 
@@ -199,7 +236,7 @@ You can containerize both services for easy deployment.
 - `start`: `react-scripts start` - Development server
 - `build`: `react-scripts build` - Production build
 - `test`: `react-scripts test` - Run tests
-- `eject`: `react-scripts eject` - Eject configuration
+- `eject`: `react-scripts eject` - Eject configuration (irreversible)
 
 ## Data Model (backend/models/Wishlist.js)
 
@@ -256,7 +293,7 @@ Content-Type: application/json
 }
 ```
 
-Response:
+Response (HTTP 201):
 ```json
 {
   "_id": "507f1f77bcf86cd799439011",
@@ -269,13 +306,37 @@ Response:
 }
 ```
 
+### Update Item
+```bash
+PUT /api/wishlist/:id
+Content-Type: application/json
+
+{
+  "name": "Gaming Laptop",
+  "price": 1299,
+  "remark": "High-end gaming laptop"
+}
+```
+
+### Delete Item
+```bash
+DELETE /api/wishlist/:id
+```
+
+Response:
+```json
+{
+  "message": "Item deleted successfully"
+}
+```
+
 ## Logging
 
 All server logs are written to `backend/logs/app-YYYY-MM-DD.log`. Log levels include:
-- `[INFO]` - Informational messages
+- `[INFO]` - Informational messages (startup, requests, operations)
 - `[ERROR]` - Error messages
 - `[WARN]` - Warning messages
-- `[DEBUG]` - Debug messages (only in development)
+- `[DEBUG]` - Debug messages (only in development mode)
 
 Example log entry:
 ```
@@ -285,12 +346,52 @@ Example log entry:
 [2024-01-15T10:30:02.890Z] [INFO] Wishlist item created 507f1f77bcf86cd799439011
 ```
 
+## Environment Variables Reference
+
+### Backend (backend/.env)
+
+| Variable | Purpose | Example | Required |
+|----------|---------|---------|----------|
+| `PORT` | Server port | `5000` | No (default: 5000) |
+| `NODE_ENV` | Execution environment | `production` | No (default: development) |
+| `MONGO_URI` | MongoDB connection string | `mongodb+srv://user:pass@cluster.mongodb.net/db` | **Yes** |
+
+### Frontend (frontend/.env)
+
+| Variable | Purpose | Example | Required |
+|----------|---------|---------|----------|
+| `REACT_APP_API_URL` | Backend API URL | `https://api.example.com` | No (default: http://localhost:5000) |
+| `REACT_APP_ENV` | Environment name | `production` | No (default: development) |
+
+**⚠️ CRITICAL: Never commit real secrets, connection strings, or API keys. Use `.env.example` as a template only.**
+
+## Deployment Readiness Checklist
+
+Before deploying to AWS, verify the following:
+
+- [ ] Application runs locally without errors
+- [ ] Backend starts with `npm start` in production mode
+- [ ] Frontend builds successfully with `npm run build`
+- [ ] MongoDB Atlas connection works (test with backend running)
+- [ ] `/health` endpoint returns HTTP 200 with valid JSON
+- [ ] No hardcoded production IP addresses or domains in code
+- [ ] No hardcoded production URLs (all via REACT_APP_API_URL)
+- [ ] No secrets (passwords, tokens, keys) committed to git
+- [ ] `.env.example` exists and documents all required variables
+- [ ] `.env` is in `.gitignore` and not committed
+- [ ] Frontend API URL is configurable via environment variables
+- [ ] Existing wishlist CRUD APIs work (GET, POST, PUT, DELETE)
+- [ ] Backend gracefully handles SIGTERM signal
+- [ ] Logs are written to `backend/logs/` directory
+- [ ] Database connection fails clearly if MONGO_URI not set
+
 ## Troubleshooting
 
 ### Database Connection Issues
-- Ensure `MONGO_URI` is set correctly
-- Check MongoDB Atlas IP whitelist includes your server IP
+- Ensure `MONGO_URI` is set correctly in `.env`
+- Check MongoDB Atlas IP whitelist includes your server's IP
 - Verify database user credentials and permissions
+- Check network connectivity to MongoDB Atlas cluster
 
 ### API Connection Issues
 - Ensure backend is running and accessible
@@ -302,12 +403,25 @@ Example log entry:
 - Backend: `lsof -i :5000` and kill the process
 - Frontend: `lsof -i :3000` and kill the process
 
-### Production Deployment
+### Production Deployment Issues
 - Use environment variables for all configuration
 - Never commit `.env` files to source control
 - Use strong MongoDB credentials
 - Monitor logs regularly for errors
-- Set up proper error alerting
+- Ensure ALB health check is configured to hit `/health` endpoint
+
+## Deployment Handoff for DevOps
+
+This application is designed for environment-agnostic deployment:
+
+1. **No code changes needed** - All configuration is externalized via environment variables
+2. **Backend deployment** - Provide `PORT`, `NODE_ENV`, and `MONGO_URI` environment variables
+3. **Frontend deployment** - Build with `npm run build`, provide `REACT_APP_API_URL` at build time, deploy `build/` folder to static hosting
+4. **Health checks** - ALB can be configured to check `/health` endpoint (no authentication required)
+5. **Graceful shutdown** - Application automatically handles SIGTERM signals
+6. **Monitoring** - All important events logged to `backend/logs/`
+
+No source code modifications are required for different environments.
 
 ## Next Steps
 
@@ -316,5 +430,4 @@ Example log entry:
 - 🎨 Enhance UI with sorting, filtering, and search
 - 📱 Add responsive mobile design
 - 🔔 Add real-time updates with WebSockets
-- 📦 Add Docker support for easy deployment
-- 🚀 Set up CI/CD pipeline
+- 🚀 Set up CI/CD pipeline with GitHub Actions
