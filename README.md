@@ -2,16 +2,16 @@
 
 A minimal MERN (MongoDB, Express, React, Node) wishlist application that demonstrates a simple CRUD API and a React frontend using that API. This repository contains a Node/Express backend (backend folder) and a React frontend (frontend folder).
 
-## 🚀 Production-Ready Features
+##  Production-Ready Features
 
-✅ **Health Check Endpoint** - `/health` for monitoring and load balancer health checks
-✅ **Graceful Shutdown** - Handles SIGTERM and SIGINT signals properly
-✅ **Structured Logging** - Daily log files with timestamps and log levels
-✅ **Environment Configuration** - Environment-based API URL switching
-✅ **Input Validation** - Request validation middleware on all endpoints
-✅ **Error Handling** - Global error handlers and proper error responses
-✅ **CORS Enabled** - Cross-origin resource sharing configured
-✅ **Request Logging** - HTTP request/response logging with duration tracking
+**Health Check Endpoint** - `/health` for monitoring and load balancer health checks
+**Graceful Shutdown** - Handles SIGTERM and SIGINT signals properly
+**Structured Logging** - Daily log files with timestamps and log levels
+**Environment Configuration** - Environment-based API URL switching
+**Input Validation** - Request validation middleware on all endpoints
+**Error Handling** - Global error handlers and proper error responses
+**CORS Enabled** - Cross-origin resource sharing configured
+**Request Logging** - HTTP request/response logging with duration tracking
 
 ## Stack
 
