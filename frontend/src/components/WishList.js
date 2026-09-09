@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 
 function WishList() {
 
@@ -12,7 +13,7 @@ function WishList() {
 
     const fetchItems = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/wishlist');
+            const res = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WISHLIST}`);
             setItems(res.data);
         } catch (error) {
             console.log(error);
@@ -21,7 +22,7 @@ function WishList() {
 
     const deleteItem = async (id) => {
         try {
-            await axios.delete(`http://localhost:5000/api/wishlist/${id}`);
+            await axios.delete(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WISHLIST}/${id}`);
             fetchItems();
         } catch (error) {
             console.log(error);
@@ -31,7 +32,7 @@ function WishList() {
     const updateItem = async () => {
         try {
             await axios.put(
-                `http://localhost:5000/api/wishlist/${editItem._id}`,
+                `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.WISHLIST}/${editItem._id}`,
                 {
                     name: editItem.name,
                     price: editItem.price,
