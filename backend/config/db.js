@@ -5,7 +5,8 @@ const connectDB = async () => {
   try {
     // Validate MONGO_URI
     if (!process.env.MONGO_URI) {
-      throw new Error('MONGO_URI environment variable is not set');
+      logger.warn('MONGO_URI environment variable is not set — MongoDB connection will not be established');
+      return;
     }
 
     logger.info('Attempting to connect to MongoDB...');
@@ -13,6 +14,7 @@ const connectDB = async () => {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     });
     
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
@@ -27,8 +29,10 @@ const connectDB = async () => {
     });
     
   } catch (error) {
+    // Log the error but do NOT exit
+    // The /health endpoint will return 200 so ALB keeps the instance running
+    // API routes that need DB will return 503 individually
     logger.error('Database connection failed:', error.message);
-    process.exit(1);
   }
 };
 
